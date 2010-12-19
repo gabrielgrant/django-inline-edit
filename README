@@ -1,43 +1,63 @@
-{% if form %}To edit this page, click <a href="#my_editable_content" class="inline_edit_button">here</a>{% endif %}
+django-inline-edit makes it easy to create inline-editable content.
 
-<div id="my_editable_content">
-	<div class="inline_editable_content">
-		<h2>{{ object.title }}</h2>
-		{{ object.body }}
+The default is to use the same criteria as Django's admin app to
+determine which users can edit (ie those that have editing permissions
+on the model in question), but it is easy to override this decision criteria.
+
+Here's an example of how it works:
+
+Given these models:
+
+	class Author(models.Model):
+	    name = models.CharField(max_length=100)
+
+	class Book(models.Model):
+	    author = models.ForeignKey(Author)
+	    title = models.CharField(max_length=100)
+
+
+creating an inline editable view is simple:
+
+InlineUpdateView().as_view(model=Author)
+
+
+By default, this will look for a template at "books/publisher_inline_form.html"
+
+This template could look like this:
+
+	{% if form %}
+		To edit this page, click
+		<a href="#my_editable_content" class="inline_edit_button">here</a>
+	{% endif %}
+
+	<div id="my_editable_content">
+		<div class="inline_editable_content">
+			<h2>{{ object.title }}</h2>
+			{{ object.body }}
+		</div>
+		<form action="" method="post" class="inline_editable_form">
+			{{ form }}
+			<input type="submit" value="Save" />
+		</form>
 	</div>
-	<form action="" method="post" class="inline_editable_form">
-		{{ form }}
-		<input type="submit" value="Save" />
-	</form>
-</div>
-
-class Author(models.Model):
-    name = models.CharField(max_length=100)
-
-class Book(models.Model):
-    author = models.ForeignKey(Author)
-    title = models.CharField(max_length=100)
 
 
-InlineUpdateView().as_view(model=Publisher)
+django-inline-edit also has an implementation of ModelForm that allows
+the inclusion of inline formsets within it.
 
-uses "books/publisher_inline_form.html"
+	from django.forms.models import inlineformset_factory
+	from embedded_inline_form import ModelForm
 
+	class AuthorBooksForm(ModelForm):
+		class Meta:
+			model = Author
+		class Forms:
+			inlines = {
+				'books': inlineformset_factory(Author, Book),
+			}
 
-
-from django.forms.models import inlineformset_factory
-from embedded_inline_form import ModelForm
-
-class AuthorBooksForm(ModelForm):
-	class Meta:
+	class AuthorUpdateView(UpdateView):
+		form_class = AuthorBooksForm
 		model = Author
-	class Forms:
-		inlines = {
-			'books': inlineformset_factory(Author, Book),
-		}
 
-class AuthorUpdateView(UpdateView):
-	form_class = AuthorBooksForm
-	model = Author
-
-AuthorUpdateView().as_view()
+	AuthorUpdateView().as_view()

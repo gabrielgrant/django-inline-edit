@@ -1,0 +1,43 @@
+{% if form %}To edit this page, click <a href="#my_editable_content" class="inline_edit_button">here</a>{% endif %}
+
+<div id="my_editable_content">
+	<div class="inline_editable_content">
+		<h2>{{ object.title }}</h2>
+		{{ object.body }}
+	</div>
+	<form action="" method="post" class="inline_editable_form">
+		{{ form }}
+		<input type="submit" value="Save" />
+	</form>
+</div>
+
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+
+class Book(models.Model):
+    author = models.ForeignKey(Author)
+    title = models.CharField(max_length=100)
+
+
+InlineUpdateView().as_view(model=Publisher)
+
+uses "books/publisher_inline_form.html"
+
+
+
+from django.forms.models import inlineformset_factory
+from embedded_inline_form import ModelForm
+
+class AuthorBooksForm(ModelForm):
+	class Meta:
+		model = Author
+	class Forms:
+		inlines = {
+			'books': inlineformset_factory(Author, Book),
+		}
+
+class AuthorUpdateView(UpdateView):
+	form_class = AuthorBooksForm
+	model = Author
+
+AuthorUpdateView().as_view()

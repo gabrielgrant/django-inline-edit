@@ -61,3 +61,27 @@ the inclusion of inline formsets within it.
 		model = Author
 
 	AuthorUpdateView().as_view()
+
+
+InlineUpdateView is implemented using ConditionalDispatchView, which can be used on its own. For example:
+
+class ArticleView(ConditionalDispatchView):
+	"""
+	Dispatches a DetailView or a RedirectView, if the Article body is a link
+	
+	Usage example: ArticleView().as_view(model=NewsArticle)
+	"""
+	template_name_suffix = '_article'
+	class Meta:
+		class true_view_class(RedirectView):
+			def get_redirect_url(**kwargs):
+				article = get_object_or_404(pk=kwargs['pk'])
+				
+		false_view_class = DetailView
+		@staticmethod
+		def condition_func_factory(true_model, false_model):
+			model = false_model
+			def condition_func(request, *args, **kwargs):
+				article = get_object_or_404(model, pk=kwargs['pk'])
+				return is_link(article)
+			return condition_func

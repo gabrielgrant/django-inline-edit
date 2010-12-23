@@ -73,9 +73,11 @@ class ArticleView(ConditionalDispatchView):
 	"""
 	template_name_suffix = '_article'
 	class Meta:
-		class true_view_class(RedirectView):
-			def get_redirect_url(**kwargs):
-				article = get_object_or_404(pk=kwargs['pk'])
+		class true_view_class(RedirectView, DetailView):
+			def get_redirect_url(self, **kwargs):
+				model = self.get_queryset().model
+				article = get_object_or_404(model, pk=kwargs['pk'])
+				return strip_link(article.body)
 				
 		false_view_class = DetailView
 		@staticmethod
@@ -83,5 +85,5 @@ class ArticleView(ConditionalDispatchView):
 			model = false_model
 			def condition_func(request, *args, **kwargs):
 				article = get_object_or_404(model, pk=kwargs['pk'])
-				return is_link(article)
+				return is_link(article.body)
 			return condition_func

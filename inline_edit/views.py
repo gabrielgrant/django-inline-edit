@@ -17,7 +17,7 @@ def dict_diff(dict1, dict2):
 
 class ConditionalDispatchView(object):
 	"""
-	TODO: allow overriding this class, to set items on both subclasses
+	override this class to set items on both subclasses
 	"""
 	class Meta:
 		pass

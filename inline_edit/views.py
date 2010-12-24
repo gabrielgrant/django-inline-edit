@@ -79,11 +79,11 @@ class ConditionalDispatchView(object):
 						)
 				# construct a condition func for this view's model
 				try:
-					true_model = true_view_class(**true_initkwargs).get_queryset().model
+					true_queryset = true_view_class(**true_initkwargs).get_queryset()
 				except AttributeError:
 					true_model = None
 				try:
-					false_model = false_view_class(**false_initkwargs).get_queryset().model
+					false_queryset = false_view_class(**false_initkwargs).get_queryset()
 				except AttributeError:
 					false_model = None
 				condition_func = condition_func_factory(true_model, false_model)
@@ -98,8 +98,9 @@ class InlineUpdateView(ConditionalDispatchView):
 		true_view_class = UpdateView
 		false_view_class = DetailView
 		@staticmethod
-		def condition_func_factory(true_model, false_model):
+		def condition_func_factory(true_queryset, false_queryset):
 			# default condition_func checks if user 'can_change' the object
+			true_model = true_queryset.model
 			app_label = true_model._meta.app_label
 			change_perm = true_model._meta.get_change_permission()
 			def condition_func(request, *args, **kwargs):

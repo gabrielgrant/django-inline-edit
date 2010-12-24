@@ -12,7 +12,10 @@ def conditional_dispatch(condition_func, true_view, false_view):
 	return dispatch
 
 def dict_diff(dict1, dict2):
-	diff_set = set(dict1.iteritems()) - set(dict2.iteritems())
+	try:
+		diff_set = set(dict1.iteritems()) - set(dict2.iteritems())
+	except TypeError:
+		raise TypeError('all properties on subclasses of ConditionalDispatchView must be hashable')
 	return dict(diff_set)
 
 class ConditionalDispatchView(object):
@@ -45,7 +48,11 @@ class ConditionalDispatchView(object):
 				)
 		
 		# get properties defined on this subclass as base initkwargs
-		base_initkwargs = dict_diff(cls.__dict__, ConditionalDispatchView.__dict__)
+		# we need to walk up the mro, to ensure we get properties of intermediate classes
+		base_initkwargs = {}
+		for c in reversed(cls.__mro__[:2]):
+			base_initkwargs.update(c.__dict__)
+		base_initkwargs = dict_diff(base_initkwargs, ConditionalDispatchView.__dict__)
 		base_initkwargs.update(initkwargs)
 		
 		# remove the Meta class; that's for us, not the view class
@@ -86,7 +93,7 @@ class ConditionalDispatchView(object):
 					false_queryset = false_view_class(**false_initkwargs).get_queryset()
 				except AttributeError:
 					false_model = None
-				condition_func = condition_func_factory(true_model, false_model)
+				condition_func = condition_func_factory(true_queryset, false_queryset)
 				if not callable(condition_func):
 					raise TypeError('condition_func must be callable')
 		

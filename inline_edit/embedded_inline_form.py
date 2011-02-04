@@ -3,13 +3,12 @@
 # This document is licensed as free software under the terms of the
 # BSD License: http://www.opensource.org/licenses/bsd-license.php
 
-
 from django.forms.models import ModelFormMetaclass
 
 
 class ModelFormOptions(object):
     def __init__(self, options=None):
-        self.inlines = getattr(options, 'inlines', {}) 
+        self.inlines = getattr(options, 'inlines', {})
 
 class ModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):
@@ -32,7 +31,7 @@ class ModelForm(forms.ModelForm):
     >>> class ImageProgram(models.Model):
     ...     image = models.ImageField('image')
     ...     program = models.ForeignKey(Programm)
-    
+
     >>> class Ringtone(models.Model):
     ...     sound = models.FileField('sound')
     ...     program = models.ForeignKey(Programm)
@@ -47,7 +46,7 @@ class ModelForm(forms.ModelForm):
     ...         return cleaned_data
 
     In your app, say you declare the following inline formsets:
-    >>> ImageProgramFormSet = inlineformset_factory(Program, ImageProgram, 
+    >>> ImageProgramFormSet = inlineformset_factory(Program, ImageProgram,
     ...                                             form=ImageProgramForm, max_num=6)
     >>> RingToneFormSet = inlineformset_factory(Program, RingTone, form=RingtoneProgramForm)
 

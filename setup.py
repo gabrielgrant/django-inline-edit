@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='django-inline-edit',
-    version='0.1.2dev',
+    version='0.2.0dev',
     packages=['inline_edit',],
     author='Gabriel Grant',
     author_email='g@briel.ca',

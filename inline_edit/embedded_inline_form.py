@@ -3,8 +3,8 @@
 # This document is licensed as free software under the terms of the
 # BSD License: http://www.opensource.org/licenses/bsd-license.php
 
+from django import forms
 from django.forms.models import ModelFormMetaclass
-
 
 class ModelFormOptions(object):
     def __init__(self, options=None):

@@ -112,5 +112,6 @@ class InlineUpdateView(ConditionalDispatchView):
 			change_perm = true_model._meta.get_change_permission()
 			def condition_func(request, *args, **kwargs):
 				return request.user.has_perm(app_label + '.' + change_perm)
+			return condition_func
 		
 

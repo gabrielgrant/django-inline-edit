@@ -4,6 +4,8 @@ The default is to use the same criteria as Django's admin app to
 determine which users can edit (ie those that have editing permissions
 on the model in question), but it is easy to override this decision criteria.
 
+#Usage
+
 Here's an example of how it works:
 
 Given these models:
@@ -18,29 +20,116 @@ Given these models:
 
 creating an inline editable view is simple:
 
-InlineUpdateView().as_view(model=Author)
-
+	InlineUpdateView.as_view(model=Author)
 
 By default, this will look for a template at "books/publisher_inline_form.html"
+
+##Templates
 
 This template could look like this:
 
 	{% if form %}
-		To edit this page, click
-		<a href="#my_editable_content" class="inline_edit_button">here</a>
+		To toggle edit mode, click
+		<a href="#my_editable_content" class="iedit_button">here</a>
 	{% endif %}
 
 	<div id="my_editable_content">
-		<div class="inline_editable_content">
+		<div class="iedit_content">
 			<h2>{{ object.title }}</h2>
 			{{ object.body }}
 		</div>
-		<form action="" method="post" class="inline_editable_form">
+	{% if form %}
+		<form action="" method="post" class="iedit_form">
 			{{ form }}
 			<input type="submit" value="Save" />
 		</form>
+	{% endif %}
 	</div>
 
+
+The magic lies in the class names (iedit_button, iedit_content and iedit_form):
+
+elements with class `iedit_form` are shown when in edit mode
+elements with class `iedit_content` are shown when in view mode
+
+An element with class `iedit_button` acts as a toggle between edit and view modes for its specified editable section. On page load, we are in view mode: all content is shown and forms are hidden. In the example above, when the the link is clicked, form and content sections within the `my_editable_content` div have their visibility toggled. For more complex setups (toggling multiple editable sections; using elements other than links as buttons; different on and off buttons), see below. 
+
+To sumarize:
+- on page load, any edit-mode element is hidden; view-mode elements are visible.
+- when an element with the `iedit_button` class is clicked, the forms are shown and content is hidden. Its data-edit-selector (or href) attribute is used to locate the 
+
+### Multiple toggle areas and other more complex setups
+
+`data-edit-selector`
+
+If the edit button is a link, it toggles visibility of form and content sections within the element specified by the button's `href` attribute, but more complicated setups are often needed. In these cases, the data-iedit-selector attribute can be used to specify a CSS selector to specify content area(s). This makes it easy to customize the behaviour.
+For example, to have seperate edit-mode on and off buttons:
+
+	{% if form %}
+		<div class="editable">
+			<div class="iedit_content iedit_button" data-iedit-selector=".editable">
+				Edit the page
+			</div>
+			<div class="iedit_form iedit_button" data-iedit-selector=".editable">
+				View the page
+			</div>
+		</div><!-- end of class="editable" -->
+	{% endif %}
+
+	<div class="editable">
+		<div class="iedit_content">
+			<h2>{{ object.title }}</h2>
+			{{ object.body }}
+		</div>
+	{% if form %}
+		<form action="" method="post" class="iedit_form">
+			{{ form }}
+			<input type="submit" value="Save" />
+		</form>
+	{% endif %}
+	</div>
+
+Note: If a link has a `data-edit-selector` attribute, that will be used rather than the `href`, thus allowing links to arbitrary content for those viewers with javascript disabled.
+
+For the curious: yes, this `data-` attribute is valid markup (see [John Resig's blog post for details](http://ejohn.org/blog/html-5-data-attributes/). Why, then, employ the `href` element attribute at all? [For its semantic value -- pointing to a single element is `href`'s _raison d'etre_.](http://www.danwebb.net/2010/1/27/put-that-data-attribute-away-son-you-might-hurt-someone)
+
+
+TODO
+
+Additionally,
+edit_mode_off
+edit_mode_on
+
+##Animation
+
+To use jQuery's slide animation, add `data-edit-slide="duration"` onto the button tag.
+
+#Custom dispatch criteria
+books.change_author
+
+
+urls.py:
+
+def can_edit_author(request, *args, **kwargs):
+	""" Crowdsource updates to Jimmy Wales' author profile """
+
+	author = get_object_or_404(Author, slug=kwargs['slug'])
+	crowdsourced = author.name == 'Jimmy Wales'
+
+	# this is the same check that InlineUpdate normally does
+	user_is_editor = request.user.has_perm('books.change_author')
+
+	return user_is_editor or crowd_sourced
+
+urlpatterns = patterns('',
+    url(r'^(?P<slug>\w+)*/$',
+      InlineUpdateView.as_view(model=Author, condition_func=can_edit_author),
+      name='author_view'
+    ),
+)
+
+
+#Embedded Inline Forms
 
 django-inline-edit also has an implementation of ModelForm that allows
 the inclusion of inline formsets within it.
@@ -62,14 +151,42 @@ the inclusion of inline formsets within it.
 
 	AuthorUpdateView().as_view()
 
+The embedded formsets can then be accessed in the template:
 
-InlineUpdateView is implemented using ConditionalDispatchView, which can be used on its own. For example:
+	{{ form.inlineformsets.books.management_form }}
+	{{ form.inlineformsets.books.non_form_errors }}
+	<table>
+	{{ form.inlineformsets.books }}
+	</table>
+
+#How form submission works
+
+uses jquery.form
+
+<script src="http://github.com/malsup/form/raw/master/jquery.form.js?v2.43"></script>
+<script src="{{ STATIC_URL }}inline_edit/inline_edit.js"></script>
+
+django-inline-edit captures submit events generated within the form and processes them with ajax, disabling the form until the submission is complete.
+
+capture submit events for forms either contained within or containing the editable section
+
+When it finishes, all editable blocks are updated with the new contents from the returned page.
+
+If the blocks can't be found, then we assume the whole page has changed, and display the new page in its entirety (by replacing the body element).
+
+Also, if you don't want to do ajax-based submission, set data-iedit-submit="noajax" on the containing element.
+
+
+#ConditionalDispatchView
+
+InlineUpdateView is implemented using ConditionalDispatchView, which
+can be used on its own. For example:
 
 class ArticleView(ConditionalDispatchView):
 	"""
 	Dispatches a DetailView or a RedirectView, if the Article body is a link
 	
-	Usage example: ArticleView().as_view(model=NewsArticle)
+	Usage (in urls.py): ArticleView().as_view(model=NewsArticle)
 	"""
 	template_name_suffix = '_article'
 	class Meta:

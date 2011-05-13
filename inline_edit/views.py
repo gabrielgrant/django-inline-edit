@@ -1,3 +1,5 @@
+import types
+
 from django.views.generic import DetailView, UpdateView
 from django.utils.decorators import classonlymethod
 from django.core.exceptions import ImproperlyConfigured
@@ -47,22 +49,29 @@ class ConditionalDispatchView(object):
 					" false_view_class property on this view's Meta class."
 				)
 		
-		# get properties defined on this subclass as base initkwargs
+		# get properties defined on this subclass as base props
 		# we need to walk up the mro, to ensure we get properties of intermediate classes
-		base_initkwargs = {}
+		base_props = {}
 		for c in reversed(cls.__mro__[:2]):
-			base_initkwargs.update(c.__dict__)
-		base_initkwargs = dict_diff(base_initkwargs, ConditionalDispatchView.__dict__)
-		base_initkwargs.update(initkwargs)
-		
+			base_props.update(c.__dict__)
+		base_props = dict_diff(base_props, ConditionalDispatchView.__dict__)
+
 		# remove the Meta class; that's for us, not the view class
-		base_initkwargs.pop('Meta', None)
+		base_props.pop('Meta', None)
+
+		# as_view over-rides this method, not that of the individual views
+		base_props.pop('as_view', None)
+
+		# attach base props to views
+		base_cls = type('BaseConditionalDispatchView', (object,), base_props)
+		true_view_class = type(true_view_class.__name__, (true_view_class,), base_props)
+		false_view_class = type(false_view_class.__name__, (false_view_class,), base_props)
 		
 		# create class-specific keyword arguments
 		true_initkwargs = {}
 		false_initkwargs = {}
 		
-		for k, v in base_initkwargs.iteritems():
+		for k, v in initkwargs.iteritems():
 			if hasattr(true_view_class, k):
 				true_initkwargs[k] = v
 			if hasattr(false_view_class, k):

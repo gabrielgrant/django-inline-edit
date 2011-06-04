@@ -8,13 +8,17 @@ if(typeof jQuery == 'undefined'){
 
 (function ($){
 	$(function(){
+		var getEditableSelector = function(button){
+			var editable_sel = $(button).attr("data-edit-selector");
+			if (editable_sel == undefined){
+				editable_sel = $(button).attr("href");
+			}
+			return editable_sel
+		}
 		// do visibility setup
 		$(".iedit_form").hide();
 		$(".iedit_button").click(function(){
-			var editable_sel = $(this).attr("data-edit-selector");
-			if (editable_sel == undefined){
-				editable_sel = $(this).attr("href");
-			}
+			var editable_sel = getEditableSelector(this);
 			var editable = $(editable_sel).find("*").andSelf();
 			duration = $(this).attr("data-edit-slide");
 			if (duration == undefined){
@@ -39,5 +43,15 @@ if(typeof jQuery == 'undefined'){
 				alert("Successfully saved.");
 			});
 		}
+
+		// show the forms that contain errors
+		var error_form_buttons = $(".iedit_button").filter(function(){
+			return $(getEditableSelector(this)).has(".errorlist li");
+		}
+		error_form_buttons.each(function(i, v){
+				var editable = $(getEditableSelector(v));
+				editable.filter(".iedit_content").hide();
+				editable.filter(".iedit_form").show();
+		});
 	});
 })(jQuery);

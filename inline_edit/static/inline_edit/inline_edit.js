@@ -50,8 +50,8 @@ if(typeof jQuery == 'undefined'){
 		});
 		error_form_buttons.each(function(i, v){
 				var editable = $(getEditableSelector(v));
-				editable.filter(".iedit_content").hide();
-				editable.filter(".iedit_form").show();
+				editable.find(".iedit_content").hide();
+				editable.find(".iedit_form").show();
 		});
 	});
 })(jQuery);

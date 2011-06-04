@@ -47,7 +47,7 @@ if(typeof jQuery == 'undefined'){
 		// show the forms that contain errors
 		var error_form_buttons = $(".iedit_button").filter(function(){
 			return $(getEditableSelector(this)).has(".errorlist li");
-		}
+		});
 		error_form_buttons.each(function(i, v){
 				var editable = $(getEditableSelector(v));
 				editable.filter(".iedit_content").hide();
